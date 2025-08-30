@@ -12,6 +12,7 @@
             overflow: hidden;
             font-family: Arial, sans-serif;
             cursor: pointer;
+            text-align: center;
         }
         .word {
             position: absolute;
@@ -19,7 +20,8 @@
             background-color: #f0f0f0;
             border: 1px solid #ccc;
             border-radius: 5px;
-            font-size: 20px;
+            font-size: 40px;
+            width: 100px;
             user-select: none;
         }
     </style>
@@ -1039,10 +1041,24 @@ const pairs = [
 { key:"Minderjähriger ", value:" minor child"},
 { key:"die Niederlage/Niederlage/die Niederlagen/Niederlagen ", value:"defeat"},
 ]; 
-        function getRandomPair() {
-            const randomIndex = Math.floor(Math.random() * pairs.length);
-            return pairs[randomIndex];
-        }
+
+    const keyEl = createWordElement("AAA", true);
+    const valueEl = createWordElement("BBB", false);
+    document.body.appendChild(keyEl);
+    document.body.appendChild(valueEl);
+    let shuffledPairs = [...pairs].sort(() => Math.random() - 0.5); // Shuffle the pairs once
+    let currentIndex = 0;
+    let touchStartX = 0;
+
+    // Initial display
+    window.onload = showCurrentPair;
+
+
+    function getRandomPair() {
+        const randomIndex = Math.floor(Math.random() * pairs.length);
+        return pairs[randomIndex];
+    }
+
 	function pickRandomSplitEntry (str, splitChar) {
 		const entries = str.split(splitChar);
 		if (entries.length < 2)
@@ -1055,45 +1071,72 @@ const pairs = [
 		return trimmedEntries[randomIndex];
 	}
 
+    function createWordElement(text, isKey) {
+        const div = document.createElement('div');
+        div.className = 'word';
+        div.style.width = `${(window.innerWidth - 100)}px`;
+        div.textContent = text.trim();
+        div.style.left = `20px`; // Avoid edges
+        if (isKey)
+            div.style.top = `20px`;
+        else
+            div.style.top = `100px`;
+        return div;
+    }
 
-        function createWordElement(text, isKey) {
-            const div = document.createElement('div');
-            div.className = 'word';
-            div.textContent = text.trim();
-            div.style.left = `20px`; // Avoid edges
-	    if (isKey)
-		    div.style.top = `20px`;
-	    else
-		    div.style.top = `100px`;
-            return div;
+    function clearScreen() {
+        document.body.querySelectorAll('.word').forEach(el => el.remove());
+    }
+
+    function showCurrentPair() {
+        const pair = shuffledPairs[currentIndex];
+        if (pair == undefined) {
+            console.log("Pair is undefined");
+            console.log(pair);
+            throw("Pair is undefined");
         }
+        keyEl.textContent = pickRandomSplitEntry(pair.key, '/');
+        valueEl.textContent = pickRandomSplitEntry(pair.value, ',');
+    }
 
-        function clearScreen() {
-            document.body.querySelectorAll('.word').forEach(el => el.remove());
+    function nextPair() {
+        currentIndex = (currentIndex + 1) % shuffledPairs.length;
+        showCurrentPair();
+    }
+
+    function previousPair() {
+        currentIndex = (currentIndex - 1 + shuffledPairs.length) % shuffledPairs.length;
+        showCurrentPair();
+    }
+
+    // Touch events for swipe and tap
+    document.body.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+    });
+
+    document.body.addEventListener('touchend', e => {
+        const touchEndX = e.changedTouches[0].screenX;
+        const deltaX = touchEndX - touchStartX;
+
+        if (Math.abs(deltaX) <= 20) {
+            // Tap: next
+            nextPair();
+        } else if (deltaX > 20) {
+            // Swipe right: next
+            nextPair();
+        } else if (deltaX < -20) {
+            // Swipe left: previous
+            previousPair();
         }
+    });
 
-        function showPair() {
-            const pair = getRandomPair();
-	    if (pair == undefined) {
-		    console.log("Pair is undefined");
-		    console.log(pair);
-		    throw("Pair is undefined");
-	    }
-	    keyEl.textContent = pickRandomSplitEntry(pair.key, '/');
-	    valueEl.textContent = pickRandomSplitEntry(pair.value, ',');
-	}
-
-        function showNextPair() {
-            showPair();
+    // For desktop: click as next
+    document.body.addEventListener('click', e => {
+        if (!e.touches) { // Avoid double trigger on touch devices
+            nextPair();
         }
+    });
 
-        const keyEl = createWordElement("AAA", true);
-        const valueEl = createWordElement("BBB", false);
-        document.body.appendChild(keyEl);
-        document.body.appendChild(valueEl);
-
-        // Initial display
-        window.onload = showPair;
     </script>
 </body>
 </html>
