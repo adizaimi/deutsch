@@ -159,10 +159,16 @@ const pairs = [
     });
 
     function playWordSound(el) {
-        var word = el.textContent;
-        const audio = document.getElementById('wordAudio');
-        audio.src = `http://translate.google.com/translate_tts?ie=UTF-8&tl=de&q=${encodeURIComponent(word)}&client=tw-ob`;
-        audio.play();
+        var text = el.textContent;
+        try {
+            const response = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&q=${encodeURIComponent(text)}&client=tw-ob`;
+            if (!response) throw new Error(`HTTP error! Response: ${response}`);
+            const audio = document.getElementById('wordAudio');
+            audio.src = response;
+            audio.play().catch(error => console.error("Audio playback failed:", error));
+        } catch (error) {
+            console.error("Failed to fetch audio:", error);
+        }
     }
 
   </script>
