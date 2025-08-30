@@ -100,6 +100,10 @@ const pairs = [
                 event.stopPropagation();
                 playWordSound(div);
             }
+            div.touchend = (event) => { 
+                event.stopPropagation();
+                playWordSound(div);
+            }
         } else
             div.style.top = `100px`;
         return div;
