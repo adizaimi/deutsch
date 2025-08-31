@@ -8,7 +8,6 @@
         body {
             margin: 0;
             padding: 0;
-            height: 100vh;
             overflow: hidden;
             font-family: Arial, sans-serif;
             cursor: pointer;
@@ -20,7 +19,7 @@
             background-color: #f0f0f0;
             border: 1px solid #ccc;
             border-radius: 5px;
-            font-size: 40px;
+            font-size: 20px;
             width: 100px;
             user-select: none;
         }
@@ -94,7 +93,7 @@ const pairs = [
     function createWordElement(text, isKey) {
         const div = document.createElement('div');
         div.className = 'word';
-        div.style.width = `${(window.innerWidth - 100)}px`;
+        div.style.width = `${(window.innerWidth - 20)}px`;
         div.textContent = text.trim();
         div.style.left = `20px`; // Avoid edges
         if (isKey) {
