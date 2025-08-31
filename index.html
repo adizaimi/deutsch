@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Single Pair Display</title>
+    <title>Deutsch Words</title>
+    <link rel="manifest" href="/manifest.json">
     <style>
         body {
             margin: 0;
@@ -24,7 +25,7 @@
             user-select: none;
         }
         .on {
-            background-color: #907080; /* Color for 'selected' box */
+            background-color: #80c080; /* Color for 'selected' box */
             transition: background-color 0s ease; /* Smooth transition */
         }
     </style>
@@ -172,34 +173,16 @@ const pairs = [
         }
     });
 
-function playWordSound(div) {
-    const word = div.textContent.trim();
+    function playWordSound(el) {
+        var text = el.textContent;
+        const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&q=${encodeURIComponent(text)}&client=tw-ob`;
 
-    // Check if SpeechSynthesis is supported
-    if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(word);
-        utterance.lang = 'de-DE'; // Set to German
-        utterance.volume = 1.0; // 0 to 1
-        utterance.rate = 0.8; // 0.1 to 10
-        utterance.pitch = 1.1; // 0 to 2
-
-        // Optionally select a specific voice
-        const voices = window.speechSynthesis.getVoices();
-        const germanVoice = voices.find(voice => voice.lang === 'de-DE');
-        if (germanVoice) {
-            utterance.voice = germanVoice; // Use German voice (e.g., Siri’s Anna)
-        }
-
-        // Play the speech
-        window.speechSynthesis.speak(utterance);
-
-        // Log for debugging
-        console.log('Playing TTS for:', word);
-    } else {
-        console.error('SpeechSynthesis not supported');
-        alert('Text-to-speech is not supported in this browser.');
+        const audio = new Audio(audioUrl);
+        audio.play().catch(err => {
+            console.error('Audio playback error:', err);
+            alert('Error playing sound: ' + err.message);
+        });
     }
-}
 
   </script>
   <audio id="wordAudio" src=""></audio>

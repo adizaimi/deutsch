@@ -1,0 +1,10 @@
+{
+  "name": "Learn Deutsch Words",
+  "short_name": "Deutsch Words",
+  "description": "Learn German words and their translation",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#007bff",
+  "scope": "/"
+}
