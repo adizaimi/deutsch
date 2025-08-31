@@ -93,7 +93,7 @@ const pairs = [
     function createWordElement(text, isKey) {
         const div = document.createElement('div');
         div.className = 'word';
-        div.style.width = `${(window.innerWidth - 20)}px`;
+        div.style.width = `${(window.innerWidth - 30)}px`;
         div.textContent = text.trim();
         div.style.left = `20px`; // Avoid edges
         if (isKey) {
@@ -115,7 +115,7 @@ const pairs = [
             div.addEventListener('touchend', (event) => { 
             })
         } else
-            div.style.top = `100px`;
+            div.style.top = `150px`;
         return div;
     }
 
@@ -174,15 +174,13 @@ const pairs = [
 
     function playWordSound(el) {
         var text = el.textContent;
-        try {
-            const response = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&q=${encodeURIComponent(text)}&client=tw-ob`;
-            if (!response) throw new Error(`HTTP error! Response: ${response}`);
-            const audio = document.getElementById('wordAudio');
-            audio.src = response;
-            audio.play().catch(error => console.error("Audio playback failed:", error));
-        } catch (error) {
-            console.error("Failed to fetch audio:", error);
-        }
+        const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&q=${encodeURIComponent(text)}&client=tw-ob`;
+
+        const audio = new Audio(audioUrl);
+        audio.play().catch(err => {
+            console.error('Audio playback error:', err);
+            alert('Error playing sound: ' + err.message);
+        });
     }
 
   </script>
