@@ -24,6 +24,10 @@
             width: 100px;
             user-select: none;
         }
+        .on {
+            background-color: #607080; /* Color for 'selected' box */
+            transition: background-color 0s ease; /* Smooth transition */
+        }
     </style>
 </head>
 <body onclick="showNextPair()">
@@ -96,14 +100,21 @@ const pairs = [
         if (isKey) {
             div.style.top = `20px`;
             //div.addEventListener('click', () => playWordSound(div));
-            div.onclick = (event) => { 
+            div.addEventListener('click', (event) => { 
                 event.stopPropagation();
                 playWordSound(div);
-            }
-            div.touchend = (event) => { 
+                div.classList.add('on');
+                setTimeout(() => { div.classList.remove('on'); }, 300);
+            })
+            div.addEventListener('touchend', (event) => { 
                 event.stopPropagation();
+                event.preventDefault();
                 playWordSound(div);
-            }
+                div.classList.add('on');
+                setTimeout(() => { div.classList.remove('on'); }, 300);
+            })
+            div.addEventListener('touchend', (event) => { 
+            })
         } else
             div.style.top = `100px`;
         return div;
