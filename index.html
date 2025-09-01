@@ -11,17 +11,20 @@
             padding: 0;
             overflow: hidden;
             font-family: Arial, sans-serif;
-            cursor: pointer;
             text-align: center;
         }
+        .container {
+            align: center;
+            border: 2px solid lightyellow;
+            display: flex;
+            flex-direction: column;
+        }
         .word {
-            position: absolute;
             padding: 10px;
             background-color: #f0f0f0;
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 20px;
-            width: 100px;
             user-select: none;
         }
         .on {
@@ -30,9 +33,18 @@
         }
     </style>
 </head>
-<body onclick="showNextPair()">
-  <script src="wl.js"></script>
-  <script>
+<body>
+  <audio id="wordAudio" src=""></audio>
+  <table class="container" id="entireField">
+      <tr class="container"><td>  </td></tr>
+      <tr class="container"><td><div class="word" id="topEl"></div></td></tr>
+      <tr class="container"><td><div class="word" id="bottomEl"></div></td></tr>
+  </table>
+<table id="accuracyMapTbl" class='accmap' align="center" ></table>
+<div id="index">blah</div>
+
+<script src="wl.js"></script>
+<script>
 
 /* Define your pairs of symbols
 const pairs = [
@@ -62,92 +74,116 @@ const pairs = [
     { key: 'x', value: 'X' }
 ]; */
 
-    const keyEl = createWordElement("AAA", true);
-    const valueEl = createWordElement("BBB", false);
-    document.body.appendChild(keyEl);
-    document.body.appendChild(valueEl);
-    let shuffledPairs = [...pairs].sort(() => Math.random() - 0.5); // Shuffle the pairs once
-    let currentIndex = 0;
-    let touchStartX = 0;
 
-    // Initial display
-    window.onload = showCurrentPair;
+function getEl(elName) {
+    return document.getElementById(elName);
+}
 
+function getRandomPair() {
+    const randomIndex = Math.floor(Math.random() * pairs.length);
+    return pairs[randomIndex];
+}
 
-    function getRandomPair() {
-        const randomIndex = Math.floor(Math.random() * pairs.length);
-        return pairs[randomIndex];
+function pickRandomSplitEntry (str, splitChar) {
+    const entries = str.split(splitChar);
+    if (entries.length < 2)
+        return str;
+    //console.log(entries); // debug print the pairs
+    const trimmedEntries = entries.map(item=>item.trim());
+    //console.log(trimmedEntries); // debug print the pairs
+    const randomIndex = Math.floor(Math.random() * trimmedEntries.length);
+    //console.log(randomIndex); // debug print the pairs
+    return trimmedEntries[randomIndex];
+}
+
+function createWordElement(text, isKey) {
+    const div = document.createElement('div');
+    div.className = 'word';
+    div.style.width = `${(window.innerWidth - 30)}px`;
+    div.textContent = text.trim();
+    div.style.left = `20px`; // Avoid edges
+    if (isKey) {
+        div.style.top = `20px`;
+        //div.addEventListener('click', () => playWordSound(div));
+    } else
+        div.style.top = `150px`;
+    return div;
+}
+
+function showCurrentPair() {
+    const pair = shuffledPairs[currentIndex];
+    if (pair == undefined) {
+        console.log("Pair is undefined");
+        console.log(pair);
+        throw("Pair is undefined");
     }
+    const keyEl = getEl('topEl');
+    const valueEl = getEl('bottomEl');
+    keyEl.textContent = pickRandomSplitEntry(pair.key, '/');
+    valueEl.textContent = pickRandomSplitEntry(pair.value, ',');
+    getEl('index').textContent = `${currentIndex}`;
+}
 
-	function pickRandomSplitEntry (str, splitChar) {
-		const entries = str.split(splitChar);
-		if (entries.length < 2)
-			return str;
-		//console.log(entries); // debug print the pairs
-		const trimmedEntries = entries.map(item=>item.trim());
-		//console.log(trimmedEntries); // debug print the pairs
-		const randomIndex = Math.floor(Math.random() * trimmedEntries.length);
-		//console.log(randomIndex); // debug print the pairs
-		return trimmedEntries[randomIndex];
-	}
+function showNextPair() {
+    console.log("showNextPair()");
+    currentIndex = (currentIndex + 1) % shuffledPairs.length;
+    showCurrentPair();
+}
 
-    function createWordElement(text, isKey) {
-        const div = document.createElement('div');
-        div.className = 'word';
-        div.style.width = `${(window.innerWidth - 30)}px`;
-        div.textContent = text.trim();
-        div.style.left = `20px`; // Avoid edges
-        if (isKey) {
-            div.style.top = `20px`;
-            //div.addEventListener('click', () => playWordSound(div));
-            div.addEventListener('click', (event) => { 
-                event.stopPropagation();
-                playWordSound(div);
-                div.classList.add('on');
-                setTimeout(() => { div.classList.remove('on'); }, 300);
-            })
-            div.addEventListener('touchend', (event) => { 
-                event.stopPropagation();
-                event.preventDefault();
-                playWordSound(div);
-                div.classList.add('on');
-                setTimeout(() => { div.classList.remove('on'); }, 300);
-            })
-            div.addEventListener('touchend', (event) => { 
-            })
-        } else
-            div.style.top = `150px`;
-        return div;
+function showPreviousPair() {
+    currentIndex = (currentIndex - 1 + shuffledPairs.length) % shuffledPairs.length;
+    showCurrentPair();
+}
+
+// For desktop: click as next
+document.body.addEventListener('click', e => {
+    if (!e.touches) { // Avoid double trigger on touch devices
+        showNextPair();
     }
+});
 
-    function clearScreen() {
-        document.body.querySelectorAll('.word').forEach(el => el.remove());
-    }
+function playWordSound(el) {
+    var text = el.textContent;
+    const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&q=${encodeURIComponent(text)}&client=tw-ob`;
 
-    function showCurrentPair() {
-        const pair = shuffledPairs[currentIndex];
-        if (pair == undefined) {
-            console.log("Pair is undefined");
-            console.log(pair);
-            throw("Pair is undefined");
-        }
-        keyEl.textContent = pickRandomSplitEntry(pair.key, '/');
-        valueEl.textContent = pickRandomSplitEntry(pair.value, ',');
-    }
+    const audio = new Audio(audioUrl);
+    audio.play().catch(err => {
+        console.error('Audio playback error:', err);
+        alert('Error playing sound: ' + err.message);
+    });
+}
 
-    function showNextPair() {
-        currentIndex = (currentIndex + 1) % shuffledPairs.length;
-        showCurrentPair();
-    }
+function setUp() {
+    const field = getEl('entireField');
+    field.style.width = `${(window.innerWidth)}px`;
+    field.style.height = `${(window.innerHeight) - 40}px`;
 
-    function showPreviousPair() {
-        currentIndex = (currentIndex - 1 + shuffledPairs.length) % shuffledPairs.length;
-        showCurrentPair();
-    }
+    const topEl = getEl('topEl');
+    topEl.addEventListener('click', (event) => { 
+        event.stopPropagation();
+        playWordSound(topEl);
+        topEl.classList.add('on');
+        setTimeout(() => { topEl.classList.remove('on'); }, 300);
+    });
+
+    topEl.addEventListener('touchend', (event) => { 
+        event.stopPropagation();
+        event.preventDefault();
+        playWordSound(topEl);
+        topEl.classList.add('on');
+        setTimeout(() => { topEl.classList.remove('on'); }, 300);
+    });
+
+    topEl.addEventListener('touchend', (event) => { 
+    });
 
     // Touch events for swipe and tap
     document.body.addEventListener('touchstart', e => {
         touchStartX = e.changedTouches[0].screenX;
+    });
+
+    document.body.addEventListener('keyPress', e => {
+        console.log(e);
     });
 
     document.body.addEventListener('touchend', e => {
@@ -155,36 +191,26 @@ const pairs = [
         const deltaX = touchEndX - touchStartX;
 
         if (Math.abs(deltaX) <= 20) {
-            // Tap: next
-            showNextPair();
+            // Tap: do nothing, click even will handle
         } else if (deltaX > 20) {
-            // Swipe right: next
-            showNextPair();
-        } else if (deltaX < -20) {
-            // Swipe left: previous
+            // Swipe right: previous
             showPreviousPair();
-        }
-    });
-
-    // For desktop: click as next
-    document.body.addEventListener('click', e => {
-        if (!e.touches) { // Avoid double trigger on touch devices
+        } else if (deltaX < -20) {
+            // Swipe left: next
             showNextPair();
         }
     });
+}
 
-    function playWordSound(el) {
-        var text = el.textContent;
-        const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&q=${encodeURIComponent(text)}&client=tw-ob`;
+let shuffledPairs = [...pairs].sort(() => Math.random() - 0.5); // Shuffle the pairs once
+let currentIndex = 0;
+let touchStartX = 0;
+setUp();
 
-        const audio = new Audio(audioUrl);
-        audio.play().catch(err => {
-            console.error('Audio playback error:', err);
-            alert('Error playing sound: ' + err.message);
-        });
-    }
+// Initial display
+window.onload = showCurrentPair;
 
-  </script>
-  <audio id="wordAudio" src=""></audio>
+</script>
+
 </body>
 </html>
