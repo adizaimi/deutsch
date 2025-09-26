@@ -142,15 +142,98 @@ document.body.addEventListener('click', e => {
     }
 });
 
-function playWordSound(el) {
-    var text = el.textContent;
-    const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&q=${encodeURIComponent(text)}&client=tw-ob`;
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-    const audio = new Audio(audioUrl);
-    audio.play().catch(err => {
-        console.error('Audio playback error:', err);
-        alert('Error playing sound: ' + err.message);
-    });
+async function playWordSound(el) {
+    var text = el.textContent.trim().replace(/\s*\(pl\)\s*/gi, '');
+    if (false) {
+        console.log('Try via direct connection.');
+        const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&q=${encodeURIComponent(text)}&client=tw-ob`;
+        fetch(audioUrl)
+            .then(response => {
+                console.log('Response ', response.json());
+            })
+            .then(data => {
+                console.log('Download complete:', data.file);
+                return;
+            })
+            .catch(error => {
+                console.log('Error Encountered: ' + error);
+            });
+    }
+
+    if (false) {
+        console.log('Will try via the proxy forward way');
+        const audioUrl = `translate_tts?ie=UTF-8&tl=de&q=${encodeURIComponent(text)}&client=tw-ob`;
+        /* delay does not do anything
+         * fetch(audioUrl);
+         * await sleep(2000);
+         * console.log('after 2s');
+         */
+        fetch(audioUrl)
+            .then(response => {
+                console.log('Response ', response);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.blob();
+            })
+            .then(data => {
+                console.log('Download complete:', data.file);
+                var abc = new Audio(URL.createObjectURL(blob)); // Create an Audio object from the Blob
+                abc.play(); // Play the audio
+            })
+            .catch(error => {
+                console.log('Error Encountered: ' + error);
+            });
+    }
+
+    if (true) {
+        console.log('Trigger server running Node to download mp3 file if not cached.');
+        fetch(`local_tts?word=${encodeURIComponent(text)}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Download complete:', data.file);
+
+            //const audioUrl = `/tts_cache/${encodeURIComponent(text)}.mp3`;
+            const audioUrl = `/tts_cache/${encodeURIComponent(text.replace(/\s*/gi, ""))}.mp3`;
+            console.log('Loading audio url ' + audioUrl);
+
+            const audio = new Audio(audioUrl);
+            audio.play().catch(err => {
+                console.error('Audio playback error:', err);
+                alert('Error playing sound: ' + err.message);
+            });
+            return;
+        })
+        .catch(error => console.error(error));
+    }
+
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'de-DE'; // Set to German
+        utterance.volume = 1.0; // 0 to 1
+        utterance.rate = 0.8; // 0.1 to 10
+        utterance.pitch = 1.1; // 0 to 2
+
+        // Optionally select a specific voice
+        const voices = window.speechSynthesis.getVoices();
+        const germanVoice = voices.find(voice => voice.lang === 'de-DE');
+        if (germanVoice) {
+            utterance.voice = germanVoice; // Use German voice (e.g., Siri’s Anna)
+        }
+
+        // Play the speech
+        window.speechSynthesis.speak(utterance);
+
+        // Log for debugging
+        console.log('Playing TTS for:', text);
+    } else {
+        console.error('SpeechSynthesis not supported');
+        alert('Text-to-speech is not supported in this browser.');
+    }
 }
 
 function setUp() {
@@ -159,14 +242,14 @@ function setUp() {
     field.style.height = `${(window.innerHeight) - 40}px`;
 
     const topEl = getEl('topEl');
-    topEl.addEventListener('click', (event) => { 
+    topEl.addEventListener('click', (event) => {
         event.stopPropagation();
         playWordSound(topEl);
         topEl.classList.add('on');
         setTimeout(() => { topEl.classList.remove('on'); }, 300);
     });
 
-    topEl.addEventListener('touchend', (event) => { 
+    topEl.addEventListener('touchend', (event) => {
         event.stopPropagation();
         event.preventDefault();
         playWordSound(topEl);
@@ -174,7 +257,7 @@ function setUp() {
         setTimeout(() => { topEl.classList.remove('on'); }, 300);
     });
 
-    topEl.addEventListener('touchend', (event) => { 
+    topEl.addEventListener('touchend', (event) => {
     });
 
     // Touch events for swipe and tap
