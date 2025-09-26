@@ -197,7 +197,7 @@ async function playWordSound(el) {
         .then(data => {
             console.log('Download complete:', data.file);
 
-            //const audioUrl = `/tts_cache/${encodeURIComponent(text)}.mp3`;
+            // Server removes spaces when it saves, so we need to do the same.
             const audioUrl = `/tts_cache/${encodeURIComponent(text.replace(/\s*/gi, ""))}.mp3`;
             console.log('Loading audio url ' + audioUrl);
 
@@ -206,33 +206,33 @@ async function playWordSound(el) {
                 console.error('Audio playback error:', err);
                 alert('Error playing sound: ' + err.message);
             });
-            return;
         })
-        .catch(error => console.error(error));
-    }
+        .catch(error => {
+            console.error(error);
+            if ('speechSynthesis' in window) {
+                console.log('Using Speech Sythesis.');
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'de-DE'; // Set to German
+                utterance.volume = 1.0; // 0 to 1
+                utterance.rate = 0.8; // 0.1 to 10
+                utterance.pitch = 1.1; // 0 to 2
 
-    if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'de-DE'; // Set to German
-        utterance.volume = 1.0; // 0 to 1
-        utterance.rate = 0.8; // 0.1 to 10
-        utterance.pitch = 1.1; // 0 to 2
+                // Optionally select a specific voice
+                const voices = window.speechSynthesis.getVoices();
+                const germanVoice = voices.find(voice => voice.lang === 'de-DE');
+                if (germanVoice) {
+                    utterance.voice = germanVoice; // Use German voice (e.g., Siri’s Anna)
+                }
 
-        // Optionally select a specific voice
-        const voices = window.speechSynthesis.getVoices();
-        const germanVoice = voices.find(voice => voice.lang === 'de-DE');
-        if (germanVoice) {
-            utterance.voice = germanVoice; // Use German voice (e.g., Siri’s Anna)
-        }
+                // Play the speech
+                window.speechSynthesis.speak(utterance);
 
-        // Play the speech
-        window.speechSynthesis.speak(utterance);
-
-        // Log for debugging
-        console.log('Playing TTS for:', text);
-    } else {
-        console.error('SpeechSynthesis not supported');
-        alert('Text-to-speech is not supported in this browser.');
+                // Log for debugging
+                console.log('Playing TTS for:', text);
+            } else {
+                console.log('Speach sythesis is not available');
+            }
+        });
     }
 }
 
