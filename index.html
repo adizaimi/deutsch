@@ -14,10 +14,10 @@
             text-align: center;
         }
         .container {
-            align: center;
             border: 2px solid lightyellow;
             display: flex;
             flex-direction: column;
+            align-items: center;
         }
         .word {
             padding: 10px;
@@ -31,6 +31,54 @@
             background-color: #80c080; /* Color for 'selected' box */
             transition: background-color 0s ease; /* Smooth transition */
         }
+        .autospeak-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 45px;
+            height: 22px;
+            background-color: #ccc;
+            border-radius: 11px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            position: relative;
+            outline: none;
+        }
+        
+        .autospeak-toggle::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background-color: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .autospeak-toggle.on {
+            background-color: #4CAF50;
+        }
+        
+        .autospeak-toggle.on::before {
+            transform: translateX(23px);
+        }
+        
+        .autospeak-toggle.off {
+            background-color: #f44336;
+        }
+        
+        .autospeak-toggle.off::before {
+            transform: translateX(0px);
+        }
+        
+        .autospeak-toggle:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
@@ -41,7 +89,9 @@
       <tr class="container"><td><div class="word" id="bottomEl"></div></td></tr>
   </table>
 <table id="accuracyMapTbl" class='accmap' align="center" ></table>
-<div id="index">blah</div>
+<div id="counterField">blah</div>
+<br>
+<div id="toggle">><button class="autospeak-toggle" id="autospeakToggle">autospeak</button></div>
 
 <script src="wl.js"></script>
 <script>
@@ -104,7 +154,6 @@ function createWordElement(text, isKey) {
     div.style.left = `20px`; // Avoid edges
     if (isKey) {
         div.style.top = `20px`;
-        //div.addEventListener('click', () => playWordSound(div));
     } else
         div.style.top = `150px`;
     return div;
@@ -119,9 +168,30 @@ function showCurrentPair() {
     }
     const keyEl = getEl('topEl');
     const valueEl = getEl('bottomEl');
-    keyEl.textContent = pickRandomSplitEntry(pair.key, '/');
+    if (nextWord != '') {
+        keyEl.textContent = nextWord;
+    } else {
+        var txt = pickRandomSplitEntry(pair.key, '/');
+        keyEl.textContent = txt.trim().replace(/\s*\(pl\)\s*/gi, '');
+    }
     valueEl.textContent = pickRandomSplitEntry(pair.value, ',');
-    getEl('index').textContent = `${currentIndex}`;
+    getEl('counterField').textContent = `${currentIndex}`;
+
+    if (autospeakEnabled) {
+        playWordSound(getEl('topEl'));
+
+        var txt = pickRandomSplitEntry(shuffledPairs[currentIndex + 1].key, '/');
+        nextWord = txt.trim().replace(/\s*\(pl\)\s*/gi, '');
+
+        console.log('Pre-Fetching TTS for next word:', nextWord);
+        fetch(`local_tts?word=${encodeURIComponent(nextWord)}`)
+            .then(response => {
+                console.log('Response ', response);
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    }
 }
 
 function showNextPair() {
@@ -146,22 +216,24 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function playWordSound(el) {
-    var text = el.textContent.trim().replace(/\s*\(pl\)\s*/gi, '');
+function playWordSound(el) {
+    var text = el.textContent;
     if (false) {
+        var success = false;
         console.log('Try via direct connection.');
         const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=de&q=${encodeURIComponent(text)}&client=tw-ob`;
         fetch(audioUrl)
             .then(response => {
-                console.log('Response ', response.json());
+                console.log('Response ', response);
             })
             .then(data => {
-                console.log('Download complete:', data.file);
-                return;
+                console.log('Download complete:', data);
+                success = true;
             })
             .catch(error => {
                 console.log('Error Encountered: ' + error);
             });
+        if (success) return;
     }
 
     if (false) {
@@ -191,13 +263,12 @@ async function playWordSound(el) {
     }
 
     if (true) {
-        console.log('Trigger server running Node to download mp3 file if not cached.');
+        console.log(`Trigger server running Node to download {encodeURIComponent(text)}.mp3 file if not cached.`);
         fetch(`local_tts?word=${encodeURIComponent(text)}`)
         .then(response => response.json())
         .then(data => {
             console.log('Download complete:', data.file);
 
-            // Server removes spaces when it saves, so we need to do the same.
             const audioUrl = `/tts_cache/${encodeURIComponent(text.replace(/\s*/gi, ""))}.mp3`;
             console.log('Loading audio url ' + audioUrl);
 
@@ -206,11 +277,11 @@ async function playWordSound(el) {
                 console.error('Audio playback error:', err);
                 alert('Error playing sound: ' + err.message);
             });
+            return;
         })
         .catch(error => {
             console.error(error);
-            if ('speechSynthesis' in window) {
-                console.log('Using Speech Sythesis.');
+            if (false && 'speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'de-DE'; // Set to German
                 utterance.volume = 1.0; // 0 to 1
@@ -230,16 +301,31 @@ async function playWordSound(el) {
                 // Log for debugging
                 console.log('Playing TTS for:', text);
             } else {
-                console.log('Speach sythesis is not available');
+                console.error('SpeechSynthesis not supported');
+
             }
         });
     }
 }
 
-function setUp() {
+function setup() {
     const field = getEl('entireField');
     field.style.width = `${(window.innerWidth)}px`;
     field.style.height = `${(window.innerHeight) - 40}px`;
+
+    // Set up autospeak toggle button
+    const autospeakToggle = getEl('autospeakToggle');
+    autospeakToggle.addEventListener('click', function(event) {
+        event.stopPropagation(); // Prevent triggering next word
+        autospeakEnabled = !autospeakEnabled;
+        if (autospeakEnabled) {
+            autospeakToggle.classList.remove('off');
+            autospeakToggle.classList.add('on');
+        } else {
+            autospeakToggle.classList.remove('on');
+            autospeakToggle.classList.add('off');
+        }
+    });
 
     const topEl = getEl('topEl');
     topEl.addEventListener('click', (event) => {
@@ -283,15 +369,22 @@ function setUp() {
             showNextPair();
         }
     });
+
+    // Initialize toggle button state
+    getEl('autospeakToggle').classList.add(autospeakEnabled ? 'on' : 'off');
 }
 
 let shuffledPairs = [...pairs].sort(() => Math.random() - 0.5); // Shuffle the pairs once
 let currentIndex = 0;
 let touchStartX = 0;
-setUp();
+let autospeakEnabled = false;
+let nextWord = '';
+setup();
 
 // Initial display
-window.onload = showCurrentPair;
+window.onload = function() {
+    showCurrentPair();
+};
 
 </script>
 
