@@ -82,16 +82,13 @@
     </style>
 </head>
 <body>
-  <audio id="wordAudio" src=""></audio>
   <table class="container" id="entireField">
       <tr class="container"><td>  </td></tr>
       <tr class="container"><td><div class="word" id="topEl"></div></td></tr>
       <tr class="container"><td><div class="word" id="bottomEl"></div></td></tr>
   </table>
-<table id="accuracyMapTbl" class='accmap' align="center" ></table>
-<div id="counterField">blah</div>
-<br>
-<div id="toggle">><button class="autospeak-toggle" id="autospeakToggle">autospeak</button></div>
+<div id="toggle"><button class="autospeak-toggle" id="autospeakToggle">autospeak</button></div>
+<div id="counterField">blahcount</div>
 
 <script src="wl.js"></script>
 <script>
@@ -218,6 +215,18 @@ function sleep(ms) {
 
 function playWordSound(el) {
     var text = el.textContent;
+
+    // Check if audio is already cached
+    if (audioCache[text]) {
+        console.log('Playing cached audio for:', text);
+        audioCache[text].currentTime = 0; // Reset to beginning
+        audioCache[text].play().catch(err => {
+            console.error('Audio playback error:', err);
+        });
+        return;
+    }
+
+
     if (false) {
         var success = false;
         console.log('Try via direct connection.');
@@ -273,6 +282,9 @@ function playWordSound(el) {
             console.log('Loading audio url ' + audioUrl);
 
             const audio = new Audio(audioUrl);
+            // Cache the audio object
+            audioCache[text] = audio;
+
             audio.play().catch(err => {
                 console.error('Audio playback error:', err);
                 alert('Error playing sound: ' + err.message);
@@ -311,7 +323,7 @@ function playWordSound(el) {
 function setup() {
     const field = getEl('entireField');
     field.style.width = `${(window.innerWidth)}px`;
-    field.style.height = `${(window.innerHeight) - 40}px`;
+    field.style.height = `${(window.innerHeight) - 70}px`;
 
     // Set up autospeak toggle button
     const autospeakToggle = getEl('autospeakToggle');
@@ -379,6 +391,7 @@ let currentIndex = 0;
 let touchStartX = 0;
 let autospeakEnabled = false;
 let nextWord = '';
+let audioCache = {}; // Cache for audio objects
 setup();
 
 // Initial display
