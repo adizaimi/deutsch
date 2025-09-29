@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <title>Deutsch Words</title>
     <link rel="manifest" href="/manifest.json">
     <style>
@@ -12,6 +15,15 @@
             overflow: hidden;
             font-family: Arial, sans-serif;
             text-align: center;
+            /* iOS home screen app fixes */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            /* Prevent zoom on iOS */
+            -webkit-text-size-adjust: 100%;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
         }
         .container {
             border: 2px solid lightyellow;
@@ -31,10 +43,8 @@
             background-color: #80c080; /* Color for 'selected' box */
             transition: background-color 0s ease; /* Smooth transition */
         }
-        .autospeak-toggle {
+        .autoread-toggle {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
             width: 45px;
             height: 22px;
             background-color: #ccc;
@@ -47,7 +57,7 @@
             outline: none;
         }
         
-        .autospeak-toggle::before {
+        .autoread-toggle::before {
             content: '';
             position: absolute;
             top: 2px;
@@ -60,24 +70,53 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         
-        .autospeak-toggle.on {
+        .autoread-toggle.on {
             background-color: #4CAF50;
         }
         
-        .autospeak-toggle.on::before {
+        .autoread-toggle.on::before {
             transform: translateX(23px);
         }
         
-        .autospeak-toggle.off {
+        .autoread-toggle.off {
             background-color: #f44336;
         }
         
-        .autospeak-toggle.off::before {
+        .autoread-toggle.off::before {
             transform: translateX(0px);
         }
         
-        .autospeak-toggle:hover {
+        .autoread-toggle:hover {
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+
+
+        /* iOS home screen app specific styles */
+        @media screen and (display-mode: standalone) {
+            body {
+                /* Larger fonts for home screen app */
+                font-size: 16px;
+            }
+
+            .word {
+                font-size: 24px !important;
+                padding: 15px !important;
+            }
+
+            .toggle-label {
+                font-size: 14px !important;
+            }
+
+            .autospeak-toggle {
+                width: 50px !important;
+                height: 25px !important;
+            }
+
+            .autospeak-toggle::before {
+                width: 21px !important;
+                height: 21px !important;
+            }
         }
     </style>
 </head>
@@ -87,7 +126,10 @@
       <tr class="container"><td><div class="word" id="topEl"></div></td></tr>
       <tr class="container"><td><div class="word" id="bottomEl"></div></td></tr>
   </table>
-<div id="toggle"><button class="autospeak-toggle" id="autospeakToggle">autospeak</button></div>
+<div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+    <button class="autoread-toggle" id="autoreadToggle"></button>
+    <span class="toggle-label">autoread</span>
+</div>
 <div id="counterField">blahcount</div>
 
 <script src="wl.js"></script>
@@ -174,7 +216,7 @@ function showCurrentPair() {
     valueEl.textContent = pickRandomSplitEntry(pair.value, ',');
     getEl('counterField').textContent = `${currentIndex}`;
 
-    if (autospeakEnabled) {
+    if (autoreadEnabled) {
         playWordSound(getEl('topEl'));
 
         var txt = pickRandomSplitEntry(shuffledPairs[currentIndex + 1].key, '/');
@@ -325,17 +367,17 @@ function setup() {
     field.style.width = `${(window.innerWidth)}px`;
     field.style.height = `${(window.innerHeight) - 70}px`;
 
-    // Set up autospeak toggle button
-    const autospeakToggle = getEl('autospeakToggle');
-    autospeakToggle.addEventListener('click', function(event) {
+    // Set up autoread toggle button
+    const autoreadToggle = getEl('autoreadToggle');
+    autoreadToggle.addEventListener('click', function(event) {
         event.stopPropagation(); // Prevent triggering next word
-        autospeakEnabled = !autospeakEnabled;
-        if (autospeakEnabled) {
-            autospeakToggle.classList.remove('off');
-            autospeakToggle.classList.add('on');
+        autoreadEnabled = !autoreadEnabled;
+        if (autoreadEnabled) {
+            autoreadToggle.classList.remove('off');
+            autoreadToggle.classList.add('on');
         } else {
-            autospeakToggle.classList.remove('on');
-            autospeakToggle.classList.add('off');
+            autoreadToggle.classList.remove('on');
+            autoreadToggle.classList.add('off');
         }
     });
 
@@ -383,13 +425,13 @@ function setup() {
     });
 
     // Initialize toggle button state
-    getEl('autospeakToggle').classList.add(autospeakEnabled ? 'on' : 'off');
+    getEl('autoreadToggle').classList.add(autoreadEnabled ? 'on' : 'off');
 }
 
 let shuffledPairs = [...pairs].sort(() => Math.random() - 0.5); // Shuffle the pairs once
 let currentIndex = 0;
 let touchStartX = 0;
-let autospeakEnabled = false;
+let autoreadEnabled = false;
 let nextWord = '';
 let audioCache = {}; // Cache for audio objects
 setup();
